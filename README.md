@@ -99,10 +99,11 @@ everything.
 
 | Endpoint | Status | Meaning |
 |---|---|---|
-| `POST …/events` | `200 OK` | batch ingested and processed synchronously (body `{ "processed": N }`) |
+| `POST …/events` | `200 OK` | batch ingested and processed synchronously (empty body) |
 | `POST …/events` | `400 Bad Request` | one or more events failed validation |
 | `POST …/events` | `401 Unauthorized` | missing/invalid organization credentials |
-| `GET …/entities` | `200 OK` | list of entities visible to the caller |
+| `POST …/events` | `500 Internal Server Error` | unexpected error while processing |
+| `GET …/entities` | `200 OK` | list of entities visible to the caller (empty array when none) |
 | `GET …/entities` | `401 Unauthorized` | missing/invalid user credentials |
 | `GET …/entities/{id}` | `200 OK` | entity found and visible |
 | `GET …/entities/{id}` | `404 Not Found` | entity absent, or not visible to the caller's role |
@@ -255,9 +256,18 @@ but the target topology is left open:
 
 ## Observability
 
-Serilog logs every event with structured fields `Type`, `EntityId`, `Version`,
-and `Status` (`received` / `rejected` / `processed` / `failed`), including
-failures.
+Serilog writes structured logs to the console (stdout), following the
+`bdx.nhs.listings` logging conventions (centralized `LoggerExtensions`,
+`Debug` for lifecycle, `Error` for validation/failures):
+
+- **HTTP requests** — `UseSerilogRequestLogging` (method, path, status, duration).
+- **Commands** — `LogCommandHandlingStarted` (Debug), `LogCommandValidationErrors`
+  (Error); the `LoggingBehaviour` logs only on exception.
+- **CMS events** — every event logged with `Type`, `EntityId`, `Version`, and
+  `Status` (`received` / `rejected` / `processed` / `failed`), including failures.
+
+Log levels and sinks are configured per environment in `appsettings*.json`
+(`WriteTo: Console`).
 
 ## Deployment
 

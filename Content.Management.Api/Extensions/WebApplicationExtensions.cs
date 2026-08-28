@@ -1,4 +1,5 @@
 using Content.Management.Api.Endpoints;
+using Serilog;
 
 namespace Content.Management.Api.Extensions;
 
@@ -7,6 +8,8 @@ public static class WebApplicationExtensions
 {
     public static WebApplication Configure(this WebApplication app)
     {
+        app.UseSerilogRequestLogging();
+
         if (app.Environment.IsDevelopment())
         {
             app.UseSwagger();

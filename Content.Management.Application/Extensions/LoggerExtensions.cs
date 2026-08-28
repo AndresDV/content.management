@@ -1,4 +1,5 @@
 using FluentValidation.Results;
+using MediatR;
 using Microsoft.Extensions.Logging;
 
 namespace Content.Management.Application.Extensions;
@@ -6,14 +7,29 @@ namespace Content.Management.Application.Extensions;
 /// <summary>Structured logging helpers for command handling and event processing.</summary>
 public static class LoggerExtensions
 {
-    public static void LogCommandHandlingStarted(this ILogger logger, object command)
+    public static void LogCommandHandlingStarted(this ILogger logger, IRequest<bool> command)
     {
-        logger.LogInformation("----- Handling command {CommandType} ({@Command})", command.GetGenericTypeName(), command);
+        logger.LogDebug("Handling command: {CommandName} - {Command}", command.GetType().Name, command);
     }
 
-    public static void LogCommandValidationErrors(this ILogger logger, object command, IEnumerable<ValidationFailure> errors)
+    public static void LogCommandValidationErrors(this ILogger logger, IRequest<bool> command, IList<ValidationFailure> errors)
     {
-        logger.LogWarning("----- Command {CommandType} validation errors: {@Errors}", command.GetGenericTypeName(), errors);
+        logger.LogError("Validation errors - {CommandType} - Command: {@Command} - Errors: {@ValidationErrors}", command.GetType().Name, command, errors);
+    }
+
+    public static void LogDomainValidationErrors(this ILogger logger, INotification command, IList<ValidationFailure> errors)
+    {
+        logger.LogError("Validation errors - {CommandType} - Command: {@Command} - Errors: {@ValidationErrors}", command.GetType().Name, command, errors);
+    }
+
+    public static void LogCommandSent(this ILogger logger, IRequest<bool> command)
+    {
+        logger.LogDebug("Sending command: {CommandName} - {Command}", command.GetType().Name, command);
+    }
+
+    public static void LogDomainEventHandlingStarted(this ILogger logger, INotification @event)
+    {
+        logger.LogDebug("Handling domain event: {EventName} - {@Event}", @event.GetType().Name, @event);
     }
 
     public static void LogEventReceived(this ILogger logger, string eventType, string entityId, int? version)

@@ -11,18 +11,13 @@ public class LoggingBehaviour<TRequest, TResponse>(
 {
     public async Task<TResponse> Handle(TRequest request, RequestHandlerDelegate<TResponse> next, CancellationToken cancellationToken)
     {
-        var requestName = typeof(TRequest).Name;
-
         try
         {
-            logger.LogInformation("----- Handling request {RequestName} ({@Request})", requestName, request);
-            var response = await next(cancellationToken).ConfigureAwait(false);
-            logger.LogInformation("----- Handled request {RequestName}", requestName);
-            return response;
+            return await next(cancellationToken).ConfigureAwait(false);
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "----- Error handling request {RequestName}", requestName);
+            logger.LogError(ex, "Error handling the command: {CommandName}", typeof(TRequest).Name);
             throw;
         }
     }

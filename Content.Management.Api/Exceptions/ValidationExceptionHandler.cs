@@ -19,9 +19,7 @@ public class ValidationExceptionHandler : IExceptionHandler
         httpContext.Response.StatusCode = StatusCodes.Status400BadRequest;
         httpContext.Response.ContentType = "application/problem+json";
 
-        var errors = validationException.Errors
-            .Select(e => e.ErrorMessage)
-            .ToList();
+        var errors = validationException.Errors.Select(e => e.ErrorMessage);
 
         await httpContext.Response.WriteAsJsonAsync(new { errors }, cancellationToken);
 

@@ -11,7 +11,14 @@ architecture documentation, and verify the deliverable end-to-end.
 
 ## 2. Observability
 
-Serilog structured logs for every event, capturing:
+Serilog structured logging follows the `bdx.nhs.listings` conventions —
+centralized `LoggerExtensions` helpers, `Debug` for lifecycle logs, and `Error`
+for validation errors and failures. (OpenTelemetry and gRPC-specific telemetry are
+intentionally not used.)
+
+### Event processing logs
+
+Every CMS event is logged, capturing:
 
 - `type` (`publish` / `unpublish` / `delete`)
 - `entityId`
@@ -32,8 +39,28 @@ Implemented via `LoggerExtensions`:
 - `LogEventFailed(type, entityId, version)` and `LogEventFailed(..., exception)`
 
 Each logs `Type`, `EntityId`, `Version`, and `Status` (plus `Reason`/`Error`).
-The webhook emits received/rejected/failed; the `Publish`/`Unpublish`/`Delete`
-handlers emit processed/failed.
+The ingestion flow (`ContentManagementEntityQueries.IngestContentEventsAsync`) emits
+received/rejected/failed; the `Publish`/`Unpublish`/`Delete` handlers emit
+processed/failed.
+
+### Command & domain-event logs
+
+Command and domain-event lifecycle logs mirror the `bdx.nhs.listings` pattern via
+`LoggerExtensions`:
+
+- `LogCommandHandlingStarted(command)` — `Debug`, "Handling command".
+- `LogCommandValidationErrors(command, errors)` — `Error`.
+- `LogCommandSent(command)` — `Debug`.
+- `LogDomainEventHandlingStarted(@event)` — `Debug`.
+- `LogDomainValidationErrors(@event, errors)` — `Error`.
+
+The `LoggingBehaviour` pipeline behavior logs only on exception
+(`Error handling the command: {CommandName}`), matching bdx's
+`IntegrationEventBehaviour`.
+
+HTTP requests are additionally logged via `UseSerilogRequestLogging` (method, path,
+status code, duration). Logs are written to the console sink, configured per
+environment in `appsettings*.json` (`Serilog:WriteTo: Console`).
 
 ## 3. Documentation
 

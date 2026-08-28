@@ -101,21 +101,24 @@ Webhook contract:
 
 ## 6. API
 
-Minimal API endpoint mapping (no controllers):
+Minimal API endpoints (no controllers) using strongly-typed `TypedResults`. The
+endpoints are thin: they resolve the caller's role and delegate to the query layer,
+mapping outcomes to status codes.
 
 | Operation | Endpoint | Delegates to |
 |---|---|---|
-| Ingest batch | `POST /api/content-management/events` | validate → dispatch per-event command |
+| Ingest batch | `POST /api/content-management/events` | `IContentManagementEntityQueries.IngestContentEventsAsync` |
 | Get one | `GET /api/content-management/entities/{id}` | `IContentManagementEntityQueries.GetByIdAsync` |
 | Get all | `GET /api/content-management/entities` | `IContentManagementEntityQueries.GetAllAsync` |
 
-Ingestion flow: deserialize batch → validate each event → dispatch the matching
-command (`publish` → Publish, `unpublish` → Unpublish, `delete` → Delete) → return
-`200 OK` (synchronous processing) with `{ "processed": N }`. Invalid batch → `400`
-with details.
+Ingestion flow (`IContentManagementEntityQueries.IngestContentEventsAsync`):
+validate the batch (size limit + per-event `ContentEventRequest` validation) → dispatch
+the matching command (`publish` → Publish, `unpublish` → Unpublish, `delete` →
+Delete). The endpoint returns `200 OK` (synchronous processing) with an empty body.
+Validation failures → `400` with the error details; unexpected exceptions → `500`.
 
-Status codes: webhook `200` / `400`; read endpoints `200` / `404` (not found or not
-visible). `202` is intentionally not used — events are processed synchronously.
+Status codes: webhook `200` / `400` / `500`; read endpoints `200` / `404` (not found
+or not visible). `202` is intentionally not used — events are processed synchronously.
 
 ### Dependency injection
 

@@ -8,6 +8,7 @@ sequenceDiagram
   actor CMS
   participant API as ContentManagementEndpoints
   participant Auth as OrganizationBasicAuth
+  participant Q as ContentManagementEntityQueries
   participant M as IMediator
   participant H as PublishContentManagementEntityCommandHandler
   participant R as IContentManagementEntityRepository
@@ -16,8 +17,9 @@ sequenceDiagram
   CMS->>API: POST /api/content-management/events [batch]
   API->>Auth: validate org credentials
   Auth-->>API: ok / 401
-  API->>API: validate + log "received"
-  API->>M: Send(PublishContentManagementEntityCommand)
+  API->>Q: IngestContentEventsAsync(events)
+  Q->>Q: validate batch + log "received"
+  Q->>M: Send(PublishContentManagementEntityCommand)
   M->>H: Handle(command)
   H->>R: FindAsync(id)
   R->>DB: SELECT

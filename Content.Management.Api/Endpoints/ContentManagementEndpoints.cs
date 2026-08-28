@@ -4,11 +4,13 @@ using Content.Management.Api.Authentication;
 using Content.Management.Application.Core.ContentManagementEntity.Commands;
 using Content.Management.Application.Core.ContentManagementEntity.Events;
 using Content.Management.Application.Core.ContentManagementEntity.Queries;
+using Content.Management.Application.Core.ContentManagementEntity.Queries.DTOs;
 using Content.Management.Application.Extensions;
 using Content.Management.Domain;
 using Content.Management.Domain.AggregatesModel.ContentManagementEntityAggregate;
 using FluentValidation;
 using MediatR;
+using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.Extensions.Logging;
 
 namespace Content.Management.Api.Endpoints;
@@ -16,8 +18,6 @@ namespace Content.Management.Api.Endpoints;
 /// <summary>Maps the ingestion webhook and read-only entity endpoints (Minimal API).</summary>
 public static class ContentManagementEndpoints
 {
-    private const int MaxBatchSize = 1000;
-
     public static IEndpointRouteBuilder MapContentManagementEndpoints(this IEndpointRouteBuilder endpoints)
     {
         var group = endpoints.MapGroup("api/content-management");
@@ -36,106 +36,72 @@ public static class ContentManagementEndpoints
 
         return endpoints;
     }
-
-    private static async Task<IResult> IngestContentEventsAsync(
-        IMediator mediator,
-        IValidator<ContentEventRequest> validator,
-        ILoggerFactory loggerFactory,
-        List<ContentEventRequest> events,
+    
+    private static async Task<Results<Ok, IResult>> IngestContentEventsAsync(
+        IContentManagementEntityQueries queries,
+        IReadOnlyCollection<ContentEventRequest> events,
         CancellationToken cancellationToken)
     {
-        var logger = loggerFactory.CreateLogger("ContentManagementEndpoints");
-        var errors = new List<string>();
-
-        if (events.Count > MaxBatchSize)
+        try
         {
-            return Results.BadRequest(new { error = $"Batch size must not exceed {MaxBatchSize} events." });
+            await queries.IngestContentEventsAsync(events, cancellationToken).ConfigureAwait(false);
+            return TypedResults.Ok();
         }
-
-        foreach (var contentEvent in events)
+        catch (ValidationException validationException)
         {
-            logger.LogEventReceived(contentEvent.Type, contentEvent.Id, contentEvent.Version);
+            var errors = validationException.Errors.Any()
+                ? validationException.Errors.Select(e => e.ErrorMessage)
+                : [validationException.Message];
 
-            var result = await validator.ValidateAsync(contentEvent, cancellationToken);
-            if (!result.IsValid)
-            {
-                foreach (var error in result.Errors)
-                {
-                    logger.LogEventRejected(contentEvent.Type, contentEvent.Id, contentEvent.Version, error.ErrorMessage);
-                    errors.Add(error.ErrorMessage);
-                }
-            }
+            return TypedResults.BadRequest(new { errors });
         }
-
-        if (errors.Count != 0)
+        catch (Exception)
         {
-            return Results.BadRequest(new { errors });
+            return TypedResults.Problem($"Error while trying to ingest content events.");
         }
-
-        foreach (var contentEvent in events)
-        {
-            var command = ToCommand(contentEvent);
-
-            try
-            {
-                await mediator.Send(command, cancellationToken);
-            }
-            catch (Exception ex)
-            {
-                logger.LogEventFailed(contentEvent.Type, contentEvent.Id, contentEvent.Version, ex);
-                throw;
-            }
-        }
-
-        return Results.Ok(new { processed = events.Count });
     }
 
-    private static IRequest<bool> ToCommand(ContentEventRequest contentEvent)
-    {
-        var eventType = ContentEventType.FromKey(contentEvent.Type);
-
-        if (eventType.Equals(ContentEventType.Publish))
-        {
-            return new PublishContentManagementEntityCommand(
-                contentEvent.Id,
-                JsonSerializer.Serialize(contentEvent.Payload!.Value),
-                contentEvent.Version!.Value);
-        }
-
-        if (eventType.Equals(ContentEventType.Unpublish))
-        {
-            return new UnpublishContentManagementEntityCommand(
-                contentEvent.Id,
-                JsonSerializer.Serialize(contentEvent.Payload!.Value),
-                contentEvent.Version!.Value);
-        }
-
-        return new DeleteContentManagementEntityCommand(contentEvent.Id);
-    }
-
-    private static async Task<IResult> GetContentManagementEntityByIdAsync(
+    private static async Task<Results<Ok<ContentManagementEntityDto>, NotFound<string>, IResult>> GetContentManagementEntityByIdAsync(
         IContentManagementEntityQueries queries,
         string id,
         ClaimsPrincipal user,
         CancellationToken cancellationToken)
     {
-        var role = ResolveRole(user);
+        try
+        {
+            var role = ResolveRole(user);
+            var response = await queries.GetByIdAsync(id, role, cancellationToken);
 
-        var dto = await queries.GetByIdAsync(id, role, cancellationToken);
+            if (response is null)
+            {
+                return TypedResults.NotFound($"Content management entity with id {id} not found.");
+            }
 
-        return dto is null ? Results.NotFound() : Results.Ok(dto);
+            return TypedResults.Ok(response);
+        }
+        catch (Exception)
+        {
+            return TypedResults.Problem($"Error while trying to retrieve content management entity with id {id}.");
+        }
     }
 
-    private static async Task<IResult> GetAllContentManagementEntitiesAsync(
+    private static async Task<Results<Ok<IEnumerable<ContentManagementEntityDto>>, NotFound<string>, IResult>> GetAllContentManagementEntitiesAsync(
         IContentManagementEntityQueries queries,
         ClaimsPrincipal user,
         CancellationToken cancellationToken)
     {
-        var role = ResolveRole(user);
+        try
+        {
+            var role = ResolveRole(user);
 
-        var dtos = await queries.GetAllAsync(role, cancellationToken);
+            var response = await queries.GetAllAsync(role, cancellationToken);
 
-        return Results.Ok(dtos);
+            return TypedResults.Ok(response);
+        }
+        catch (Exception)
+        {
+            return TypedResults.Problem($"Error while trying to retrieve content management entities.");
+        }
     }
 
     private static async Task<IResult> DisableContentManagementEntityAsync(
