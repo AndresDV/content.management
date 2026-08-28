@@ -1,11 +1,15 @@
-﻿FROM mcr.microsoft.com/dotnet/runtime:9.0 AS base
+﻿FROM mcr.microsoft.com/dotnet/aspnet:9.0 AS base
 USER $APP_UID
 WORKDIR /app
+EXPOSE 8080
 
 FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build
 ARG BUILD_CONFIGURATION=Release
 WORKDIR /src
 COPY ["Content.Management.Api/Content.Management.Api.csproj", "Content.Management.Api/"]
+COPY ["Content.Management.Application/Content.Management.Application.csproj", "Content.Management.Application/"]
+COPY ["Content.Management.Domain/Content.Management.Domain.csproj", "Content.Management.Domain/"]
+COPY ["Content.Management.Infrastructure/Content.Management.Infrastructure.csproj", "Content.Management.Infrastructure/"]
 RUN dotnet restore "Content.Management.Api/Content.Management.Api.csproj"
 COPY . .
 WORKDIR "/src/Content.Management.Api"
