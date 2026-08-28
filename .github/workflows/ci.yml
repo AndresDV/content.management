@@ -27,10 +27,10 @@ jobs:
           dotnet-version: ${{ env.DOTNET_VERSION }}
 
       - name: Restore
-        run: dotnet restore Content.Management.sln
+        run: dotnet restore content.management.sln
 
       - name: Build
-        run: dotnet build Content.Management.sln --no-restore --configuration Release
+        run: dotnet build content.management.sln --no-restore --configuration Release
 
   unit-tests:
     name: Unit Tests
