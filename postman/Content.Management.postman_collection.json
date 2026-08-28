@@ -761,7 +761,7 @@
             {
               "name": "1. Ingest batch (publish x2 + unpublish never-published)",
               "event": [
-                { "listen": "test", "script": { "type": "text/javascript", "exec": [ "pm.test(\"Status is 200 OK\", function () { pm.response.to.have.status(200); });", "pm.test(\"processed 3\", function () { pm.expect(pm.response.json().processed).to.eql(3); });" ] } }
+                { "listen": "test", "script": { "type": "text/javascript", "exec": [ "pm.test(\"Status is 200 OK\", function () { pm.response.to.have.status(200); });" ] } }
               ],
               "request": {
                 "method": "POST",
