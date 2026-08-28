@@ -1,0 +1,67 @@
+# Azure DevOps pipeline: build and push the API image, then deploy to the
+# selected environment (development / staging / production).
+
+parameters:
+  - name: environment
+    displayName: Environment to deploy
+    type: string
+    default: development
+    values:
+      - development
+      - staging
+      - production
+
+trigger:
+  branches:
+    include:
+      - develop
+
+variables:
+  vmImageName: 'ubuntu-latest'
+  containerRegistry: 'contentmanagementregistry'
+  repository: 'content-management-api'
+
+  ${{ if eq(parameters['environment'], 'development') }}:
+    deploymentScript: './deploy/deploy-development.sh'
+  ${{ if eq(parameters['environment'], 'staging') }}:
+    deploymentScript: './deploy/deploy-staging.sh'
+  ${{ if eq(parameters['environment'], 'production') }}:
+    deploymentScript: './deploy/deploy-production.sh'
+
+stages:
+- stage: Build
+  displayName: Build and push image
+  jobs:
+  - job: Build
+    displayName: Build
+    pool:
+      vmImage: $(vmImageName)
+    steps:
+    - task: Docker@2
+      displayName: Build and push image to container registry
+      inputs:
+        command: buildAndPush
+        repository: $(repository)
+        dockerfile: 'Content.Management.Api/Dockerfile'
+        containerRegistry: $(containerRegistry)
+        tags: |
+          $(Build.BuildId)
+
+- stage: Deploy
+  dependsOn: Build
+  displayName: Deploy image to container app
+  jobs:
+  - job: Deploy
+    displayName: Deploy
+    pool:
+      vmImage: $(vmImageName)
+    steps:
+    - task: AzureCLI@2
+      displayName: Deploy to ${{ parameters.environment }}
+      inputs:
+        azureSubscription: 'Content Management'
+        scriptType: 'bash'
+        scriptLocation: 'scriptPath'
+        scriptPath: '$(deploymentScript)'
+        arguments: '$(Build.BuildId)'
+        addSpnToEnvironment: true

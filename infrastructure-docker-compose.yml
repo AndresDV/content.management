@@ -1,0 +1,29 @@
+version: '3.8'
+name: content-management
+
+services:
+  postgres:
+    container_name: content-management-postgres
+    image: postgres:18-alpine
+    restart: always
+    # Postgres 18+ requires a larger shared memory segment than the Docker default.
+    shm_size: 128mb
+    environment:
+      POSTGRES_USER: contentmgmt
+      POSTGRES_PASSWORD: ContentMgmtLocal
+      POSTGRES_DB: contentmanagement
+    ports:
+      - "5432:5432"
+    # For PostgreSQL 18+, data lives under /var/lib/postgresql/<major>/docker,
+    # and the image volume is declared at /var/lib/postgresql.
+    volumes:
+      - content-management-pgdata:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U contentmgmt"]
+      interval: 5s
+      timeout: 15s
+      start_period: 15s
+      retries: 10
+
+volumes:
+  content-management-pgdata:

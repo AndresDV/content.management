@@ -1,0 +1,816 @@
+{
+  "info": {
+    "name": "Content Management API",
+    "description": "Test collection for the Content Management service. Covers the ingestion webhook (Organization Basic auth), the read-only entities API (User/Admin Basic auth), the admin disable endpoint, and a Scenarios folder of ordered, self-verifying request sequences (corner case, out-of-order, multi-version, batch, delete, disable, unpublish).\n\nImport the companion environment file `Content.Management.postman_environment.json` and select it as the active environment. All credentials, base URL, and entity id are read from environment variables:\n- baseUrl, entityId\n- orgUsername, orgPassword\n- userUsername, userPassword\n- adminUsername, adminPassword\n\nRun the Scenarios folder with the Runner (top-to-bottom); each request asserts the expected status and outcome.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "1. Ingestion (Organization Basic Auth)",
+      "item": [
+        {
+          "name": "Publish entity",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200 OK\", function () { pm.response.to.have.status(200); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "[{\"type\":\"publish\",\"id\":\"{{entityId}}\",\"payload\":{\"name\":\"My Event\",\"description\":\"A test entity\"},\"version\":1,\"timestamp\":\"2024-01-01T00:00:00Z\"}]",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": "{{baseUrl}}/api/content-management/events",
+            "auth": {
+              "type": "basic",
+              "basic": [
+                { "key": "username", "value": "{{orgUsername}}", "type": "string" },
+                { "key": "password", "value": "{{orgPassword}}", "type": "string" }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Unpublish entity",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200 OK\", function () { pm.response.to.have.status(200); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "[{\"type\":\"unpublish\",\"id\":\"{{entityId}}\",\"payload\":{\"name\":\"My Event\"},\"version\":1,\"timestamp\":\"2024-01-01T00:00:00Z\"}]",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": "{{baseUrl}}/api/content-management/events",
+            "auth": {
+              "type": "basic",
+              "basic": [
+                { "key": "username", "value": "{{orgUsername}}", "type": "string" },
+                { "key": "password", "value": "{{orgPassword}}", "type": "string" }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Delete entity",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200 OK\", function () { pm.response.to.have.status(200); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "[{\"type\":\"delete\",\"id\":\"{{entityId}}\",\"timestamp\":\"2024-01-01T00:00:00Z\"}]",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": "{{baseUrl}}/api/content-management/events",
+            "auth": {
+              "type": "basic",
+              "basic": [
+                { "key": "username", "value": "{{orgUsername}}", "type": "string" },
+                { "key": "password", "value": "{{orgPassword}}", "type": "string" }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Publish invalid event (missing version)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 400 Bad Request\", function () { pm.response.to.have.status(400); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "[{\"type\":\"publish\",\"id\":\"{{entityId}}\",\"payload\":{\"name\":\"Invalid\"}}]",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": "{{baseUrl}}/api/content-management/events",
+            "auth": {
+              "type": "basic",
+              "basic": [
+                { "key": "username", "value": "{{orgUsername}}", "type": "string" },
+                { "key": "password", "value": "{{orgPassword}}", "type": "string" }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Publish without auth",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 401 Unauthorized\", function () { pm.response.to.have.status(401); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "[{\"type\":\"publish\",\"id\":\"{{entityId}}\",\"payload\":{\"name\":\"X\"},\"version\":1}]",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": "{{baseUrl}}/api/content-management/events",
+            "auth": { "type": "noauth" }
+          },
+          "response": []
+        },
+        {
+          "name": "Publish with wrong password",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 401 Unauthorized\", function () { pm.response.to.have.status(401); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "[{\"type\":\"publish\",\"id\":\"{{entityId}}\",\"payload\":{\"name\":\"X\"},\"version\":1}]",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": "{{baseUrl}}/api/content-management/events",
+            "auth": {
+              "type": "basic",
+              "basic": [
+                { "key": "username", "value": "{{orgUsername}}", "type": "string" },
+                { "key": "password", "value": "wrong-password", "type": "string" }
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "2. Read — User",
+      "item": [
+        {
+          "name": "List entities (user)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200 OK\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"Response is an array\", function () { pm.expect(pm.response.json()).to.be.an('array'); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/content-management/entities",
+            "auth": {
+              "type": "basic",
+              "basic": [
+                { "key": "username", "value": "{{userUsername}}", "type": "string" },
+                { "key": "password", "value": "{{userPassword}}", "type": "string" }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get entity (user)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200 OK\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"Has id\", function () { pm.expect(pm.response.json()).to.have.property('id'); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/content-management/entities/{{entityId}}",
+            "auth": {
+              "type": "basic",
+              "basic": [
+                { "key": "username", "value": "{{userUsername}}", "type": "string" },
+                { "key": "password", "value": "{{userPassword}}", "type": "string" }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get unpublished entity (user → 404)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 404 Not Found\", function () { pm.response.to.have.status(404); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/content-management/entities/{{entityId}}",
+            "auth": {
+              "type": "basic",
+              "basic": [
+                { "key": "username", "value": "{{userUsername}}", "type": "string" },
+                { "key": "password", "value": "{{userPassword}}", "type": "string" }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "List without auth",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 401 Unauthorized\", function () { pm.response.to.have.status(401); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/content-management/entities",
+            "auth": { "type": "noauth" }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "3. Read — Admin",
+      "item": [
+        {
+          "name": "List entities (admin)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200 OK\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"Response is an array\", function () { pm.expect(pm.response.json()).to.be.an('array'); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/content-management/entities",
+            "auth": {
+              "type": "basic",
+              "basic": [
+                { "key": "username", "value": "{{adminUsername}}", "type": "string" },
+                { "key": "password", "value": "{{adminPassword}}", "type": "string" }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get unpublished entity (admin → 200)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200 OK\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"IsPublished is false\", function () { pm.expect(pm.response.json().isPublished).to.eql(false); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/content-management/entities/{{entityId}}",
+            "auth": {
+              "type": "basic",
+              "basic": [
+                { "key": "username", "value": "{{adminUsername}}", "type": "string" },
+                { "key": "password", "value": "{{adminPassword}}", "type": "string" }
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "4. Admin — Disable",
+      "item": [
+        {
+          "name": "Disable entity (admin)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 204 No Content\", function () { pm.response.to.have.status(204); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/content-management/entities/{{entityId}}/disable",
+            "auth": {
+              "type": "basic",
+              "basic": [
+                { "key": "username", "value": "{{adminUsername}}", "type": "string" },
+                { "key": "password", "value": "{{adminPassword}}", "type": "string" }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Disable entity as non-admin (user → 403)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 403 Forbidden\", function () { pm.response.to.have.status(403); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/content-management/entities/{{entityId}}/disable",
+            "auth": {
+              "type": "basic",
+              "basic": [
+                { "key": "username", "value": "{{userUsername}}", "type": "string" },
+                { "key": "password", "value": "{{userPassword}}", "type": "string" }
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "5. Scenarios (ordered, self-verifying)",
+      "description": "Ordered request sequences that replicate the assessment's business-rule scenarios. Run each sub-folder top-to-bottom (via the Runner); every request asserts the expected outcome.",
+      "item": [
+        {
+          "name": "S1. Publish → visible",
+          "item": [
+            {
+              "name": "1. Publish {{scenarioPublishId}} (v1)",
+              "event": [
+                { "listen": "test", "script": { "type": "text/javascript", "exec": [ "pm.test(\"Status is 200 OK\", function () { pm.response.to.have.status(200); });" ] } }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [ { "key": "Content-Type", "value": "application/json" } ],
+                "body": { "mode": "raw", "raw": "[{\"type\":\"publish\",\"id\":\"{{scenarioPublishId}}\",\"payload\":{\"name\":\"Published\"},\"version\":1}]", "options": { "raw": { "language": "json" } } },
+                "url": "{{baseUrl}}/api/content-management/events",
+                "auth": { "type": "basic", "basic": [ { "key": "username", "value": "{{orgUsername}}", "type": "string" }, { "key": "password", "value": "{{orgPassword}}", "type": "string" } ] }
+              },
+              "response": []
+            },
+            {
+              "name": "2. Get {{scenarioPublishId}} (user) → 200, version 1, published",
+              "event": [
+                { "listen": "test", "script": { "type": "text/javascript", "exec": [ "pm.test(\"Status is 200 OK\", function () { pm.response.to.have.status(200); });", "pm.test(\"version is 1\", function () { pm.expect(pm.response.json().version).to.eql(1); });", "pm.test(\"isPublished is true\", function () { pm.expect(pm.response.json().isPublished).to.eql(true); });" ] } }
+              ],
+              "request": {
+                "method": "GET",
+                "url": "{{baseUrl}}/api/content-management/entities/{{scenarioPublishId}}",
+                "auth": { "type": "basic", "basic": [ { "key": "username", "value": "{{userUsername}}", "type": "string" }, { "key": "password", "value": "{{userPassword}}", "type": "string" } ] }
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "S2. Multiple versions → latest wins",
+          "item": [
+            {
+              "name": "1. Publish {{scenarioVersionsId}} (v1)",
+              "event": [
+                { "listen": "test", "script": { "type": "text/javascript", "exec": [ "pm.test(\"Status is 200 OK\", function () { pm.response.to.have.status(200); });" ] } }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [ { "key": "Content-Type", "value": "application/json" } ],
+                "body": { "mode": "raw", "raw": "[{\"type\":\"publish\",\"id\":\"{{scenarioVersionsId}}\",\"payload\":{\"name\":\"v1\"},\"version\":1}]", "options": { "raw": { "language": "json" } } },
+                "url": "{{baseUrl}}/api/content-management/events",
+                "auth": { "type": "basic", "basic": [ { "key": "username", "value": "{{orgUsername}}", "type": "string" }, { "key": "password", "value": "{{orgPassword}}", "type": "string" } ] }
+              },
+              "response": []
+            },
+            {
+              "name": "2. Publish {{scenarioVersionsId}} (v2)",
+              "event": [
+                { "listen": "test", "script": { "type": "text/javascript", "exec": [ "pm.test(\"Status is 200 OK\", function () { pm.response.to.have.status(200); });" ] } }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [ { "key": "Content-Type", "value": "application/json" } ],
+                "body": { "mode": "raw", "raw": "[{\"type\":\"publish\",\"id\":\"{{scenarioVersionsId}}\",\"payload\":{\"name\":\"v2\"},\"version\":2}]", "options": { "raw": { "language": "json" } } },
+                "url": "{{baseUrl}}/api/content-management/events",
+                "auth": { "type": "basic", "basic": [ { "key": "username", "value": "{{orgUsername}}", "type": "string" }, { "key": "password", "value": "{{orgPassword}}", "type": "string" } ] }
+              },
+              "response": []
+            },
+            {
+              "name": "3. Get {{scenarioVersionsId}} (user) → version 2",
+              "event": [
+                { "listen": "test", "script": { "type": "text/javascript", "exec": [ "pm.test(\"Status is 200 OK\", function () { pm.response.to.have.status(200); });", "pm.test(\"version is 2\", function () { pm.expect(pm.response.json().version).to.eql(2); });" ] } }
+              ],
+              "request": {
+                "method": "GET",
+                "url": "{{baseUrl}}/api/content-management/entities/{{scenarioVersionsId}}",
+                "auth": { "type": "basic", "basic": [ { "key": "username", "value": "{{userUsername}}", "type": "string" }, { "key": "password", "value": "{{userPassword}}", "type": "string" } ] }
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "S3. Unpublish → hidden from user, visible to admin",
+          "item": [
+            {
+              "name": "1. Publish {{scenarioUnpublishId}} (v1)",
+              "event": [
+                { "listen": "test", "script": { "type": "text/javascript", "exec": [ "pm.test(\"Status is 200 OK\", function () { pm.response.to.have.status(200); });" ] } }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [ { "key": "Content-Type", "value": "application/json" } ],
+                "body": { "mode": "raw", "raw": "[{\"type\":\"publish\",\"id\":\"{{scenarioUnpublishId}}\",\"payload\":{\"name\":\"A\"},\"version\":1}]", "options": { "raw": { "language": "json" } } },
+                "url": "{{baseUrl}}/api/content-management/events",
+                "auth": { "type": "basic", "basic": [ { "key": "username", "value": "{{orgUsername}}", "type": "string" }, { "key": "password", "value": "{{orgPassword}}", "type": "string" } ] }
+              },
+              "response": []
+            },
+            {
+              "name": "2. Unpublish {{scenarioUnpublishId}} (v1)",
+              "event": [
+                { "listen": "test", "script": { "type": "text/javascript", "exec": [ "pm.test(\"Status is 200 OK\", function () { pm.response.to.have.status(200); });" ] } }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [ { "key": "Content-Type", "value": "application/json" } ],
+                "body": { "mode": "raw", "raw": "[{\"type\":\"unpublish\",\"id\":\"{{scenarioUnpublishId}}\",\"payload\":{\"name\":\"A\"},\"version\":1}]", "options": { "raw": { "language": "json" } } },
+                "url": "{{baseUrl}}/api/content-management/events",
+                "auth": { "type": "basic", "basic": [ { "key": "username", "value": "{{orgUsername}}", "type": "string" }, { "key": "password", "value": "{{orgPassword}}", "type": "string" } ] }
+              },
+              "response": []
+            },
+            {
+              "name": "3. Get {{scenarioUnpublishId}} (user) → 404",
+              "event": [
+                { "listen": "test", "script": { "type": "text/javascript", "exec": [ "pm.test(\"Status is 404 Not Found\", function () { pm.response.to.have.status(404); });" ] } }
+              ],
+              "request": {
+                "method": "GET",
+                "url": "{{baseUrl}}/api/content-management/entities/{{scenarioUnpublishId}}",
+                "auth": { "type": "basic", "basic": [ { "key": "username", "value": "{{userUsername}}", "type": "string" }, { "key": "password", "value": "{{userPassword}}", "type": "string" } ] }
+              },
+              "response": []
+            },
+            {
+              "name": "4. Get {{scenarioUnpublishId}} (admin) → 200, unpublished",
+              "event": [
+                { "listen": "test", "script": { "type": "text/javascript", "exec": [ "pm.test(\"Status is 200 OK\", function () { pm.response.to.have.status(200); });", "pm.test(\"isPublished is false\", function () { pm.expect(pm.response.json().isPublished).to.eql(false); });" ] } }
+              ],
+              "request": {
+                "method": "GET",
+                "url": "{{baseUrl}}/api/content-management/entities/{{scenarioUnpublishId}}",
+                "auth": { "type": "basic", "basic": [ { "key": "username", "value": "{{adminUsername}}", "type": "string" }, { "key": "password", "value": "{{adminPassword}}", "type": "string" } ] }
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "S4. Corner case — unpublish of a never-published version",
+          "description": "The CMS modifies an entity to version 2 but never publishes it; then sends an unpublish for version 2. The entity must be persisted as unpublished (latest version tracked), hidden from users, visible to admins.",
+          "item": [
+            {
+              "name": "1. Unpublish {{scenarioCornerId}} (v2) — never published",
+              "event": [
+                { "listen": "test", "script": { "type": "text/javascript", "exec": [ "pm.test(\"Status is 200 OK\", function () { pm.response.to.have.status(200); });" ] } }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [ { "key": "Content-Type", "value": "application/json" } ],
+                "body": { "mode": "raw", "raw": "[{\"type\":\"unpublish\",\"id\":\"{{scenarioCornerId}}\",\"payload\":{\"name\":\"Unpublished-v2\"},\"version\":2}]", "options": { "raw": { "language": "json" } } },
+                "url": "{{baseUrl}}/api/content-management/events",
+                "auth": { "type": "basic", "basic": [ { "key": "username", "value": "{{orgUsername}}", "type": "string" }, { "key": "password", "value": "{{orgPassword}}", "type": "string" } ] }
+              },
+              "response": []
+            },
+            {
+              "name": "2. Get {{scenarioCornerId}} (user) → 404 (never published)",
+              "event": [
+                { "listen": "test", "script": { "type": "text/javascript", "exec": [ "pm.test(\"Status is 404 Not Found\", function () { pm.response.to.have.status(404); });" ] } }
+              ],
+              "request": {
+                "method": "GET",
+                "url": "{{baseUrl}}/api/content-management/entities/{{scenarioCornerId}}",
+                "auth": { "type": "basic", "basic": [ { "key": "username", "value": "{{userUsername}}", "type": "string" }, { "key": "password", "value": "{{userPassword}}", "type": "string" } ] }
+              },
+              "response": []
+            },
+            {
+              "name": "3. Get {{scenarioCornerId}} (admin) → 200, unpublished, version 2",
+              "event": [
+                { "listen": "test", "script": { "type": "text/javascript", "exec": [ "pm.test(\"Status is 200 OK\", function () { pm.response.to.have.status(200); });", "pm.test(\"isPublished is false\", function () { pm.expect(pm.response.json().isPublished).to.eql(false); });", "pm.test(\"version is 2\", function () { pm.expect(pm.response.json().version).to.eql(2); });" ] } }
+              ],
+              "request": {
+                "method": "GET",
+                "url": "{{baseUrl}}/api/content-management/entities/{{scenarioCornerId}}",
+                "auth": { "type": "basic", "basic": [ { "key": "username", "value": "{{adminUsername}}", "type": "string" }, { "key": "password", "value": "{{adminPassword}}", "type": "string" } ] }
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "S5. Delete → gone",
+          "item": [
+            {
+              "name": "1. Publish {{scenarioDeleteId}} (v1)",
+              "event": [
+                { "listen": "test", "script": { "type": "text/javascript", "exec": [ "pm.test(\"Status is 200 OK\", function () { pm.response.to.have.status(200); });" ] } }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [ { "key": "Content-Type", "value": "application/json" } ],
+                "body": { "mode": "raw", "raw": "[{\"type\":\"publish\",\"id\":\"{{scenarioDeleteId}}\",\"payload\":{\"name\":\"D\"},\"version\":1}]", "options": { "raw": { "language": "json" } } },
+                "url": "{{baseUrl}}/api/content-management/events",
+                "auth": { "type": "basic", "basic": [ { "key": "username", "value": "{{orgUsername}}", "type": "string" }, { "key": "password", "value": "{{orgPassword}}", "type": "string" } ] }
+              },
+              "response": []
+            },
+            {
+              "name": "2. Delete {{scenarioDeleteId}}",
+              "event": [
+                { "listen": "test", "script": { "type": "text/javascript", "exec": [ "pm.test(\"Status is 200 OK\", function () { pm.response.to.have.status(200); });" ] } }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [ { "key": "Content-Type", "value": "application/json" } ],
+                "body": { "mode": "raw", "raw": "[{\"type\":\"delete\",\"id\":\"{{scenarioDeleteId}}\"}]", "options": { "raw": { "language": "json" } } },
+                "url": "{{baseUrl}}/api/content-management/events",
+                "auth": { "type": "basic", "basic": [ { "key": "username", "value": "{{orgUsername}}", "type": "string" }, { "key": "password", "value": "{{orgPassword}}", "type": "string" } ] }
+              },
+              "response": []
+            },
+            {
+              "name": "3. Get {{scenarioDeleteId}} (user) → 404 (deleted)",
+              "event": [
+                { "listen": "test", "script": { "type": "text/javascript", "exec": [ "pm.test(\"Status is 404 Not Found\", function () { pm.response.to.have.status(404); });" ] } }
+              ],
+              "request": {
+                "method": "GET",
+                "url": "{{baseUrl}}/api/content-management/entities/{{scenarioDeleteId}}",
+                "auth": { "type": "basic", "basic": [ { "key": "username", "value": "{{userUsername}}", "type": "string" }, { "key": "password", "value": "{{userPassword}}", "type": "string" } ] }
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "S6. Out-of-order versions → highest wins",
+          "item": [
+            {
+              "name": "1. Publish {{scenarioOrderId}} (v3)",
+              "event": [
+                { "listen": "test", "script": { "type": "text/javascript", "exec": [ "pm.test(\"Status is 200 OK\", function () { pm.response.to.have.status(200); });" ] } }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [ { "key": "Content-Type", "value": "application/json" } ],
+                "body": { "mode": "raw", "raw": "[{\"type\":\"publish\",\"id\":\"{{scenarioOrderId}}\",\"payload\":{\"name\":\"v3\"},\"version\":3}]", "options": { "raw": { "language": "json" } } },
+                "url": "{{baseUrl}}/api/content-management/events",
+                "auth": { "type": "basic", "basic": [ { "key": "username", "value": "{{orgUsername}}", "type": "string" }, { "key": "password", "value": "{{orgPassword}}", "type": "string" } ] }
+              },
+              "response": []
+            },
+            {
+              "name": "2. Publish {{scenarioOrderId}} (v2) — stale",
+              "event": [
+                { "listen": "test", "script": { "type": "text/javascript", "exec": [ "pm.test(\"Status is 200 OK\", function () { pm.response.to.have.status(200); });" ] } }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [ { "key": "Content-Type", "value": "application/json" } ],
+                "body": { "mode": "raw", "raw": "[{\"type\":\"publish\",\"id\":\"{{scenarioOrderId}}\",\"payload\":{\"name\":\"v2\"},\"version\":2}]", "options": { "raw": { "language": "json" } } },
+                "url": "{{baseUrl}}/api/content-management/events",
+                "auth": { "type": "basic", "basic": [ { "key": "username", "value": "{{orgUsername}}", "type": "string" }, { "key": "password", "value": "{{orgPassword}}", "type": "string" } ] }
+              },
+              "response": []
+            },
+            {
+              "name": "3. Get {{scenarioOrderId}} (user) → version 3 (not regressed)",
+              "event": [
+                { "listen": "test", "script": { "type": "text/javascript", "exec": [ "pm.test(\"Status is 200 OK\", function () { pm.response.to.have.status(200); });", "pm.test(\"version is still 3\", function () { pm.expect(pm.response.json().version).to.eql(3); });" ] } }
+              ],
+              "request": {
+                "method": "GET",
+                "url": "{{baseUrl}}/api/content-management/entities/{{scenarioOrderId}}",
+                "auth": { "type": "basic", "basic": [ { "key": "username", "value": "{{userUsername}}", "type": "string" }, { "key": "password", "value": "{{userPassword}}", "type": "string" } ] }
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "S7. Admin disable → hidden from user",
+          "item": [
+            {
+              "name": "1. Publish {{scenarioDisableId}} (v1)",
+              "event": [
+                { "listen": "test", "script": { "type": "text/javascript", "exec": [ "pm.test(\"Status is 200 OK\", function () { pm.response.to.have.status(200); });" ] } }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [ { "key": "Content-Type", "value": "application/json" } ],
+                "body": { "mode": "raw", "raw": "[{\"type\":\"publish\",\"id\":\"{{scenarioDisableId}}\",\"payload\":{\"name\":\"Dis\"},\"version\":1}]", "options": { "raw": { "language": "json" } } },
+                "url": "{{baseUrl}}/api/content-management/events",
+                "auth": { "type": "basic", "basic": [ { "key": "username", "value": "{{orgUsername}}", "type": "string" }, { "key": "password", "value": "{{orgPassword}}", "type": "string" } ] }
+              },
+              "response": []
+            },
+            {
+              "name": "2. Disable {{scenarioDisableId}} (admin) → 204",
+              "event": [
+                { "listen": "test", "script": { "type": "text/javascript", "exec": [ "pm.test(\"Status is 204 No Content\", function () { pm.response.to.have.status(204); });" ] } }
+              ],
+              "request": {
+                "method": "POST",
+                "url": "{{baseUrl}}/api/content-management/entities/{{scenarioDisableId}}/disable",
+                "auth": { "type": "basic", "basic": [ { "key": "username", "value": "{{adminUsername}}", "type": "string" }, { "key": "password", "value": "{{adminPassword}}", "type": "string" } ] }
+              },
+              "response": []
+            },
+            {
+              "name": "3. Get {{scenarioDisableId}} (user) → 404 (disabled)",
+              "event": [
+                { "listen": "test", "script": { "type": "text/javascript", "exec": [ "pm.test(\"Status is 404 Not Found\", function () { pm.response.to.have.status(404); });" ] } }
+              ],
+              "request": {
+                "method": "GET",
+                "url": "{{baseUrl}}/api/content-management/entities/{{scenarioDisableId}}",
+                "auth": { "type": "basic", "basic": [ { "key": "username", "value": "{{userUsername}}", "type": "string" }, { "key": "password", "value": "{{userPassword}}", "type": "string" } ] }
+              },
+              "response": []
+            },
+            {
+              "name": "4. Get {{scenarioDisableId}} (admin) → 200 (admin still sees it)",
+              "event": [
+                { "listen": "test", "script": { "type": "text/javascript", "exec": [ "pm.test(\"Status is 200 OK\", function () { pm.response.to.have.status(200); });" ] } }
+              ],
+              "request": {
+                "method": "GET",
+                "url": "{{baseUrl}}/api/content-management/entities/{{scenarioDisableId}}",
+                "auth": { "type": "basic", "basic": [ { "key": "username", "value": "{{adminUsername}}", "type": "string" }, { "key": "password", "value": "{{adminPassword}}", "type": "string" } ] }
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "S8. Batch with multiple events",
+          "item": [
+            {
+              "name": "1. Ingest batch (publish x2 + unpublish never-published)",
+              "event": [
+                { "listen": "test", "script": { "type": "text/javascript", "exec": [ "pm.test(\"Status is 200 OK\", function () { pm.response.to.have.status(200); });", "pm.test(\"processed 3\", function () { pm.expect(pm.response.json().processed).to.eql(3); });" ] } }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [ { "key": "Content-Type", "value": "application/json" } ],
+                "body": { "mode": "raw", "raw": "[{\"type\":\"publish\",\"id\":\"{{scenarioBatch1Id}}\",\"payload\":{\"name\":\"A\"},\"version\":1},{\"type\":\"publish\",\"id\":\"{{scenarioBatch2Id}}\",\"payload\":{\"name\":\"B\"},\"version\":1},{\"type\":\"unpublish\",\"id\":\"{{scenarioBatch3Id}}\",\"payload\":{\"name\":\"C\"},\"version\":1}]", "options": { "raw": { "language": "json" } } },
+                "url": "{{baseUrl}}/api/content-management/events",
+                "auth": { "type": "basic", "basic": [ { "key": "username", "value": "{{orgUsername}}", "type": "string" }, { "key": "password", "value": "{{orgPassword}}", "type": "string" } ] }
+              },
+              "response": []
+            },
+            {
+              "name": "2. Get {{scenarioBatch1Id}} (user) → 200",
+              "event": [
+                { "listen": "test", "script": { "type": "text/javascript", "exec": [ "pm.test(\"Status is 200 OK\", function () { pm.response.to.have.status(200); });" ] } }
+              ],
+              "request": {
+                "method": "GET",
+                "url": "{{baseUrl}}/api/content-management/entities/{{scenarioBatch1Id}}",
+                "auth": { "type": "basic", "basic": [ { "key": "username", "value": "{{userUsername}}", "type": "string" }, { "key": "password", "value": "{{userPassword}}", "type": "string" } ] }
+              },
+              "response": []
+            },
+            {
+              "name": "3. Get {{scenarioBatch2Id}} (user) → 200",
+              "event": [
+                { "listen": "test", "script": { "type": "text/javascript", "exec": [ "pm.test(\"Status is 200 OK\", function () { pm.response.to.have.status(200); });" ] } }
+              ],
+              "request": {
+                "method": "GET",
+                "url": "{{baseUrl}}/api/content-management/entities/{{scenarioBatch2Id}}",
+                "auth": { "type": "basic", "basic": [ { "key": "username", "value": "{{userUsername}}", "type": "string" }, { "key": "password", "value": "{{userPassword}}", "type": "string" } ] }
+              },
+              "response": []
+            },
+            {
+              "name": "4. Get {{scenarioBatch3Id}} (user) → 404 (unpublished)",
+              "event": [
+                { "listen": "test", "script": { "type": "text/javascript", "exec": [ "pm.test(\"Status is 404 Not Found\", function () { pm.response.to.have.status(404); });" ] } }
+              ],
+              "request": {
+                "method": "GET",
+                "url": "{{baseUrl}}/api/content-management/entities/{{scenarioBatch3Id}}",
+                "auth": { "type": "basic", "basic": [ { "key": "username", "value": "{{userUsername}}", "type": "string" }, { "key": "password", "value": "{{userPassword}}", "type": "string" } ] }
+              },
+              "response": []
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
