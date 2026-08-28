@@ -11,10 +11,9 @@ architecture documentation, and verify the deliverable end-to-end.
 
 ## 2. Observability
 
-Serilog structured logging follows the `bdx.nhs.listings` conventions —
-centralized `LoggerExtensions` helpers, `Debug` for lifecycle logs, and `Error`
-for validation errors and failures. (OpenTelemetry and gRPC-specific telemetry are
-intentionally not used.)
+Serilog structured logging uses centralized `LoggerExtensions` helpers — `Debug`
+for lifecycle logs and `Error` for validation errors and failures. (OpenTelemetry
+and gRPC-specific telemetry are intentionally not used.)
 
 ### Event processing logs
 
@@ -45,8 +44,7 @@ processed/failed.
 
 ### Command & domain-event logs
 
-Command and domain-event lifecycle logs mirror the `bdx.nhs.listings` pattern via
-`LoggerExtensions`:
+Command and domain-event lifecycle logs use `LoggerExtensions`:
 
 - `LogCommandHandlingStarted(command)` — `Debug`, "Handling command".
 - `LogCommandValidationErrors(command, errors)` — `Error`.
@@ -55,8 +53,7 @@ Command and domain-event lifecycle logs mirror the `bdx.nhs.listings` pattern vi
 - `LogDomainValidationErrors(@event, errors)` — `Error`.
 
 The `LoggingBehaviour` pipeline behavior logs only on exception
-(`Error handling the command: {CommandName}`), matching bdx's
-`IntegrationEventBehaviour`.
+(`Error handling the command: {CommandName}`).
 
 HTTP requests are additionally logged via `UseSerilogRequestLogging` (method, path,
 status code, duration). Logs are written to the console sink, configured per

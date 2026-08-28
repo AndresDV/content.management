@@ -256,9 +256,9 @@ but the target topology is left open:
 
 ## Observability
 
-Serilog writes structured logs to the console (stdout), following the
-`bdx.nhs.listings` logging conventions (centralized `LoggerExtensions`,
-`Debug` for lifecycle, `Error` for validation/failures):
+Serilog writes structured logs to the console (stdout), using centralized
+`LoggerExtensions` helpers (`Debug` for lifecycle, `Error` for validation and
+failures):
 
 - **HTTP requests** — `UseSerilogRequestLogging` (method, path, status, duration).
 - **Commands** — `LogCommandHandlingStarted` (Debug), `LogCommandValidationErrors`
